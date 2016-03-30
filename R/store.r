@@ -4,11 +4,15 @@
 #' 
 #' @examples
 #' store <- gcs_store$new("my_bucket")
+#'
 #' files <- store$list_files() 
+#'
 #' file <- store$download_file("path/to/my/file.csv")
+#'
 #' store$upload_file("path/to/my/file.csv", mtcars)
 #' 
-#' @export 
+#' @exportClass gcs_store
+#' @export gcs_store
 
 gcs_store <- setRefClass("gcs_store", 
 	fields = list(
@@ -23,10 +27,11 @@ gcs_store <- setRefClass("gcs_store",
 
 			resp <- exec(gcs_bucket_url, params = params)
 			items <- resp$items
-			do.call("rbind", lapply(items, as.data.frame, row.names = 1L))
+			plyr::rbind.fill(lapply(items, as.data.frame, row.names = 1L))
 		},
 		download_file = function(query = list()) {
 			stopifnot(is.list(query))
+			stopifnot(!is.null(query$prefix))
 
 			files <- .self$list_files(query)
 			if (nrow(files) < 1) {
@@ -47,20 +52,20 @@ gcs_store <- setRefClass("gcs_store",
 			close(tc)
 			df
 		},
-		upload_file = function(name, df) {
+		upload_file = function(name, data = list()) {
 			stopifnot(is.character(name))
-			stopifnot(is.data.frame(df))
-
+			stopifnot(is.list(data))
+			
 			# write dataframe to tmp file
-			tmp.file <- sprintf("/tmp/%s", name)
+			tmp.file <- sprintf("/tmp/rgcs_%d", sample(100000:999999, 1))
 			tf = file(tmp.file, "w+")
-			write.csv(df, tf)
+			write.csv(data, tf)
 
 			# set uploadType to "media"
 			params = list(bucket = .self$bucket, uploadType = "media", name = name)
 
 			# uplaod to gcs
-			req <- POST(gcs_post_url, config(token = cred), body = upload_file(tmp.file), query = params, add_headers("Content-Type" = "text/csv"))
+			req <- POST(gcs_post_url, config(token = get_access_cred()), body = upload_file(tmp.file), query = params, add_headers("Content-Type" = "text/csv"))
 			resp <- process(req, as = "parsed")
 
 			# remove tmp file
@@ -69,25 +74,3 @@ gcs_store <- setRefClass("gcs_store",
 		}
 	)
 )
-
-#' A helper funciton to list the GCS buckets specific to a project 
-#'
-#' @field project The GCS project name 
-#' @field max_results The maximum number of buckets to return 
-#' 
-#' @export
-
-list_buckets <- function(project, max_results = NULL) {
-	stopifnot(is.character(project))
-	if (!is.null(max_results)) stopifnot(is.numeric(max_results))
-
-	params <- list("project" = project)	
-	if (!is.null(max_results)) {
-		params$maxResults = max_results
-	}
-
-	resp <- exec(gcs_url, params = params)
-
-	items <- resp$items
-	do.call("rbind", lapply(items, as.data.frame, row.names = 1L))
-}

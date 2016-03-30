@@ -1,3 +1,6 @@
+library(httr)
+library(plyr)
+
 #' Execute a GET request with the given URL and query params
 #' 
 #' @field path The URL to GET

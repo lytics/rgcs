@@ -1,9 +1,12 @@
-Package: Rgcs
+Package: rgcs
 Title: Do stuff with GCS in R
 Version: 0.0.0.9000
 Authors@R: person("Tim", "Kaye", email = "tim.kaye@lytics.io", role = c("aut", "cre"))
-Description: List, Download and Upload files in Google Cloud Storage. 
-Depends: R (>= 3.2.4)
-Imports: httr
+Description: List, Download and Upload files in Google Cloud Storage.
+Depends:
+    R (>= 3.2.3)
+Imports:
+    httr, plyr
 License: MIT
 LazyData: true
+RoxygenNote: 5.0.1
