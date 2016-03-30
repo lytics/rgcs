@@ -39,3 +39,18 @@ process <- function(req, as) {
 	response <- content(req, as = as, type = "application/json")
 	return (response)	
 }
+
+exec.retry <- function(path, params  = list(), as = "parsed",  num.retry = 3) {
+	return (tryCatch({
+		exec(path, params = params, as = as)
+	},
+	error = function(e) {
+		if (num.retry == 0) {
+			stop("problem with request, out of retries")
+		}
+
+		message(sprintf("GET call failed with error: %s", conditionMessage(e)))
+		httr::handle_reset(path)
+		return (exec.retry(path, params = params, as = as, num.retry = num.retry - 1))
+	}))
+}
