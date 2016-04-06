@@ -57,9 +57,9 @@ gcs_store <- setRefClass("gcs_store",
 			stopifnot(is.list(data))
 			
 			# write dataframe to tmp file
-			tmp.file <- sprintf("/tmp/rgcs_%d", sample(100000:999999, 1))
-			tf = file(tmp.file, "w+")
-			write.csv(data, tf)
+			tmp.file <- tempfile()
+			on.exit(file.remove(tmp.file)
+			stream_out(data, file(tmp.file, "w+"))
 
 			# set uploadType to "media"
 			params = list(bucket = .self$bucket, uploadType = "media", name = name)
@@ -68,8 +68,6 @@ gcs_store <- setRefClass("gcs_store",
 			req <- POST(gcs_post_url, config(token = get_access_cred()), body = upload_file(tmp.file), query = params, add_headers("Content-Type" = "text/csv"))
 			resp <- process(req, as = "parsed")
 
-			# remove tmp file
-			file.remove(tmp.file)
 			return (resp)
 		}
 	)
